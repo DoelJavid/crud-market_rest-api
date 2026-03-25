@@ -1,0 +1,741 @@
+openapi: 3.1.0
+info:
+  title: Crud Market - REST API
+  description: |-
+    A REST API for a blatantly fake E-Commerce application
+  license:
+    name: MIT
+    url: https://mit-license.org/
+  version: 1.0.0
+servers:
+  - url: http://localhost:4000/api/v1
+tags:
+  - name: users
+    description: Operations for managing users
+  - name: products
+    description: Operations for managing products
+  - name: cart
+    description: Operations for managing the user's cart
+  - name: checkout
+    description: Operations for managing the checkout process
+  - name: orders
+    description: Operations for managing user orders
+paths:
+  # User Management:
+  /auth:
+    post:
+      description: |-
+        Attempts to log the user in with the given credentials
+      requestBody:
+        description: The email and password required to authenticate
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  examples:
+                    - johndoe@example.com
+                password:
+                  type: string
+                  examples:
+                    - N0TAR3alPAs2w0Rd
+      responses:
+        "200":
+          description: Authenticated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "403":
+          description: Failed to authorize. Invalid email or password
+      tags: [users]
+
+  /register:
+    post:
+      description: |-
+        Creates a new user with the given credentials
+      requestBody:
+        description: The information required to register
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserWithPassword"
+      responses:
+        "201":
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Invalid data given
+      tags: [users]
+
+  /logout:
+    get:
+      description: |-
+        Logs out the current user
+      responses:
+        "200":
+          description: Request successful
+      tags: [users]
+
+  /me:
+    get:
+      description: |-
+        Returns the data of the current user
+      responses:
+        "200":
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "403":
+          description: User not authenticated
+      tags: [users]
+    put:
+      description: |-
+        Updates the data of the current user (Can also change the password if desired)
+      requestBody:
+        description: The information required to register
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserWithPassword"
+      responses:
+        "200":
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Invalid data given
+        "403":
+          description: User not authenticated
+      tags: [users]
+
+  /users:
+    parameters:
+      - in: query
+        name: q
+        schema:
+          type: string
+        required: false
+        description: Filters out the users based on the given username
+      - in: query
+        name: limit
+        schema:
+          type: integer
+        required: false
+        description: How many users to display at once. You can display a maximum of 50 users
+      - in: query
+        name: page
+        schema:
+          type: integer
+        required: false
+        description: To be used with `limit`. Offsets the query by `limit` times `page`
+    get:
+      description: |-
+        Returns a list of all registered users. The user must have administrator priveleges to use this
+      responses:
+        "200":
+          description: Users found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+        "403":
+          description: User doesn't have administrator priveleges
+      tags: [users]
+
+  /users/{userId}:
+    parameters:
+      - in: path
+        name: userId
+        schema:
+          type: integer
+        required: true
+        description: The ID of the user to get
+    get:
+      description: |-
+        Returns the user's data with the given ID. The user must have administrator priveleges to use this.
+      responses:
+        "200":
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "403":
+          description: User doesn't have administrator priveleges
+        "404":
+          description: User not found
+      tags: [users]
+    delete:
+      description: |-
+        Deletes the user with the given ID. The user must have administrator priveleges to use this.
+      responses:
+        "204":
+          description: User deleted successfully
+        "403":
+          description: User doesn't have administrator priveleges
+        "404":
+          description: User not found
+      tags: [users]
+
+
+
+  # Products and Product Management:
+  /products:
+    get:
+      description: |-
+        Searches the products using the given query
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          required: false
+          description: Filters out the users based on the given product name
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          required: false
+          description: How many products to display at once. You can display a maximum of 50 products
+        - in: query
+          name: page
+          schema:
+            type: integer
+          required: false
+          description: To be used with `limit`. Offsets the query by `limit` times `page`
+      responses:
+        "200":
+          description: Products found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  products:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Product"
+      tags: [products]
+    post:
+      description: |-
+        Creates a new product with the given information. The user must have administrator priveleges to use this
+      requestBody:
+        description: The information of the product to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Product"
+      responses:
+        "200":
+          description: Product created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: Invalid data given
+        "403":
+          description: User doesn't have administrator priveleges
+      tags: [products]
+
+  /products/{productId}:
+    parameters:
+      - in: path
+        name: productId
+        schema:
+          type: integer
+        required: true
+        description: The ID of the product to get
+    get:
+      description: |-
+        Returns the product with the given ID
+      responses:
+        "200":
+          description: Product obtained successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          description: Product not found
+      tags: [products]
+    put:
+      description: |-
+        Edits the product with the given ID. The user must have administrator priveleges to use this
+      requestBody:
+        description: The new information to override the product with.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Product"
+      responses:
+        "200":
+          description: Product updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "403":
+          description: User doesn't have administrator priveleges
+        "404":
+          description: Product not found
+      tags: [products]
+    delete:
+      description: |-
+        Deletes the product with the given ID. The user must have administrator priveleges to use this
+      responses:
+        "204":
+          description: Product deleted successfully
+        "403":
+          description: User doesn't have administrator priveleges
+        "404":
+          description: Product not found
+      tags: [products]
+
+  # Cart Management:
+  /cart:
+    get:
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          required: false
+          description: Filters out the cart items based on the given product name
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          required: false
+          description: How many cart items to display at once. You can display a maximum of 20 cart items
+        - in: query
+          name: page
+          schema:
+            type: integer
+          required: false
+          description: To be used with `limit`. Offsets the query by `limit` times `page`
+      description: |-
+        Returns all items in the user's cart
+      responses:
+        "200":
+          description: Cart obtained
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "403":
+          description: User isn't authenticated
+      tags: [cart]
+    post:
+      description: |-
+        Adds the given item to the user's cart. If the item already exists within the cart, increments the existing item's product count instead.
+      requestBody:
+        description: Contains the information of the product to add
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                productId:
+                  type: number
+                  examples:
+                    - 0
+                    - 1
+                    - 2
+                    - 3
+                    - 4
+                quantity:
+                  type: number
+                  examples:
+                    - 1
+                    - 2
+                    - 3
+                    - 4
+      responses:
+        "200":
+          description: Item added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CartItem"
+        "400":
+          description: Attempted to add invalid item
+        "403":
+          description: User isn't authenticated
+      tags: [cart]
+    delete:
+      description: |-
+        Clears all items within the cart without checking out
+      responses:
+        "204":
+          description: Cart cleared successfully
+        "403":
+          description: User isn't authenticated
+      tags: [cart]
+  /cart/{itemId}:
+    parameters:
+      - in: path
+        name: itemId
+        schema:
+          type: integer
+        required: true
+        description: The ID of a product in the user's cart
+    put:
+      description: |-
+        Updates the quantity of the given product
+      requestBody:
+        description: Determines the new quantity of items to get
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                productId:
+                  type: number
+                  examples:
+                    - 0
+                    - 1
+                    - 2
+                    - 3
+                    - 4
+                quantity:
+                  type: number
+                  examples:
+                    - 1
+                    - 2
+                    - 3
+                    - 4
+      responses:
+        "200":
+          description: Cart item updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CartItem"
+        "403":
+          description: User isn't authenticated
+        "404":
+          description: Cart item not found
+      tags: [cart]
+    delete:
+      description: |-
+        Clears the given item from the user's cart
+      responses:
+        "204":
+          description: Cart item removed successfully
+        "403":
+          description: User isn't authenticated
+        "404":
+          description: Cart item not found
+      tags: [cart]
+
+  # Checkout Handling:
+  /checkout:
+    post:
+      description: |-
+        Clears the user's cart and creates a new order for the user, using the given payment information
+      requestBody:
+        description: The payment information of the user
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cardNumber:
+                  type: string
+                  examples:
+                    # Example card numbers found here:
+                    # https://docs.payload.com/apis/payments/test-cards/
+                    - "4242 4242 4242 4242"
+                    - "5103 2088 7967 2792"
+                    - "3700 000000 00002"
+                    - "6011 9102 7504 5718"
+                cvv:
+                  type: string
+                  examples:
+                    - "999"
+                    - "777"
+                    - "333"
+                cardSignature:
+                  type: string
+                  examples:
+                    - John Doe
+                    - Jane Doe
+                    - Doel Javid
+                billingAddress:
+                  $ref: "#/components/schemas/Address"
+                shippingAddress:
+                  $ref: "#/components/schemas/Address"
+      responses:
+        "200":
+          description: Checkout successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: Invalid payment information given
+        "403":
+          description: User isn't authenticated
+      tags: [checkout]
+
+  # Order Management:
+  /orders:
+    parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+        required: false
+        description: How many orders to display at once. You can display a maximum of 40 orders
+      - in: query
+        name: page
+        schema:
+          type: integer
+        required: false
+        description: To be used with `limit`. Offsets the query by `limit` times `page`
+    get:
+      description: |-
+        Gets the current user's orders.
+      responses:
+        "200":
+          description: Orders obtained successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orders:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Order"
+        "403":
+          description: User isn't authenticated
+      tags: [orders]
+  /orders/all:
+    parameters:
+      - in: query
+        name: limit
+        schema:
+          type: integer
+        required: false
+        description: How many orders to display at once. You can display a maximum of 40 orders
+      - in: query
+        name: page
+        schema:
+          type: integer
+        required: false
+        description: To be used with `limit`. Offsets the query by `limit` times `page`
+    get:
+      description: |-
+        Gets all currently existing orders, filtering them by the given query. The user must have administrator priveleges to use this
+      responses:
+        "200":
+          description: Orders obtained successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orders:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Order"
+        "403":
+          description: User doesn't have administrator priveleges
+      tags: [orders]
+  /orders/{orderId}:
+    parameters:
+      - in: path
+        name: orderId
+        schema:
+          type: integer
+        required: true
+        description: The ID of the order to retrieve
+    get:
+      description: |-
+        Gets the order with the given orderId. The user must have administrator priveleges to use this
+      responses:
+        "200":
+          description: Order obtained successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "403":
+          description: User doesn't have administrator priveleges
+        "404":
+          description: Order not found
+      tags: [orders]
+    delete:
+      description: |-
+        Deletes the order from the database. The user must have administrator priveleges to use this
+      responses:
+        "204":
+          description: Order deleted successfully
+        "403":
+          description: User doesn't have administrator priveleges
+        "404":
+          description: Order not found
+      tags: [orders]
+
+
+
+components:
+  schemas:
+    Address:
+      type: object
+      properties:
+        city:
+          type: string
+          examples:
+            - Ohio
+            - Kentucky
+            - Nevada
+        state:
+          type: string
+          examples:
+            - Springfield
+            - Columbus
+            - Cincinatti
+        address:
+          type: string
+          examples:
+            - 5555 Example Dr.
+
+    User:
+      type: object
+      properties:
+        username:
+          type: string
+          examples:
+            - JohnDoe
+            - JaneDoe
+            - DoelJavid
+        email:
+          type: string
+          examples:
+            - johndoe@example.com
+            - janedoe@example.com
+        phone:
+          type: string
+          examples:
+            - 777-777-7777
+
+    UserWithPassword:
+      type: object
+      properties:
+        email:
+          type: string
+          examples:
+            - johndoe@example.com
+        phone:
+          type: string
+          examples:
+            - 777-777-7777
+        username:
+          type: string
+          examples:
+            - JohnDoe
+        password:
+          type: string
+          examples:
+            - N0TAR3alPAs2w0Rd
+
+    Product:
+      type: object
+      properties:
+        name:
+          type: string
+          examples:
+            - Weed Eater
+            - Soda Carbonator
+            - Sandwich Maker
+        description:
+          type: string
+          examples:
+            - Lorem ipsum dolor sit amet.
+        price:
+          type: number
+          examples:
+            - 15.99
+            - 17.94
+            - 18.99
+        stock:
+          type: number
+          examples:
+            - 55
+            - 8
+            - 27
+            - 88
+        category:
+          type: string
+          examples:
+            - Utilities
+
+    CartItem:
+      type: object
+      properties:
+        productName:
+          type: string
+          examples:
+            - Weed Eater
+            - Soda Carbonator
+            - Hair Rake
+        quantity:
+          type: number
+          examples:
+            - 1
+            - 2
+            - 3
+            - 4
+        price:
+          type: number
+          examples:
+            - 15.57
+            - 30.99
+            - 45.94
+
+    Cart:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CartItem"
+        price:
+          type: number
+          examples:
+            - 50.47
+            - 80.47
+            - 102.47
+
+    Order:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Product"
+        deliverTo:
+          $ref: "#/components/schemas/Address"
+
