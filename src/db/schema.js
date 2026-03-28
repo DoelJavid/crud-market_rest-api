@@ -4,21 +4,21 @@ export const rolesEnum = pgEnum("roles", ["user", "admin", "owner"])
 
 export const users = pgTable("users", (t) => ({
   id: t.serial().primaryKey(),
-  username: t.varchar().notNull().unique(),
-  email: t.varchar().notNull().unique(),
-  phone: t.varchar(),
-  address: t.varchar().notNull(),
+  username: t.varchar({ length: 32 }).notNull().unique(),
+  password: t.varchar({ length: 200 }).notNull(),
+  email: t.varchar({ length: 254 }).notNull().unique(),
+  phone: t.varchar({ length: 12 }),
   role: rolesEnum().default("user")
 }));
 
 export const categories = pgTable("categories", (t) => ({
   id: t.serial().primaryKey(),
-  name: t.varchar().notNull().unique()
+  name: t.varchar({ length: 32 }).notNull().unique()
 }));
 
 export const products = pgTable("products", (t) => ({
   id: t.serial().primaryKey(),
-  name: t.varchar().notNull().unique(),
+  name: t.varchar({ length: 50 }).notNull().unique(),
   description: t.text(),
   price: t.doublePrecision().notNull(),
   stock: t.integer().notNull(),
@@ -38,7 +38,9 @@ export const cartItems = pgTable("cart_items", (t) => {
 export const orders = pgTable("orders", (t) => ({
   id: t.serial().primaryKey(),
   userId: t.integer().references(() => users.id),
-  deliveryAddress: t.varchar()
+  deliveryAddress: t.varchar({ length: 50 }),
+  deliveryCity: t.varchar({ length: 50 }),
+  deliveryState: t.varchar({ length: 30 })
 }));
 
 export const ordersItems = pgTable("orders_items", (t) => {
