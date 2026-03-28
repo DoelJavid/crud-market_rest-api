@@ -1,12 +1,11 @@
 import "dotenv/config";
 import { drizzle } from "drizzle-orm/node-postgres";
 import express from "express";
+import usersRouter from "./routes/users.js";
 
-const db = drizzle({
-  connection: process.env.DATABASE_URL,
-  casing: "snake_case"
-});
 const app = express();
+
+app.use("/", usersRouter);
 
 app.get("/", (req, res) => {
   res.send("Hello world!");
