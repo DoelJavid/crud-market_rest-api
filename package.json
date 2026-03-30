@@ -11,9 +11,14 @@
     "test": "vitest"
   },
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "dotenv": "^17.3.1",
     "drizzle-orm": "^0.45.1",
     "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "libphonenumber-js": "^1.12.41",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0",
     "pg": "^8.20.0"
   },
   "devDependencies": {

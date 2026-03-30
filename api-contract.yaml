@@ -49,7 +49,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
-        "403":
+        "401":
           description: Failed to authorize. Invalid email or password
       tags: [users]
 

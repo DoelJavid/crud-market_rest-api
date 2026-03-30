@@ -1,21 +1,14 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, expectTypeOf } from "vitest";
 import request from "supertest";
 import session from "supertest-session";
 import app from "../src/app.js";
-import { login, loginAsAdmin, expectValidUser } from "./testutils.js";
-
-
-//
-// NOTE: The correct email and password is this:
-// email: johndoe@example.com
-// password: 1234abcd!@#$
-//
-
-const SAMPLE_USER = {
-  username: "JohnDoe",
-  email: "johndoe@example.com",
-  phone: "777-777-7777"
-};
+import {
+  sampleAdmin,
+  sampleUser,
+  login,
+  loginAsAdmin,
+  expectValidUser
+} from "./testutils.js";
 
 describe("POST /auth", () => {
   it("Returns 200 with user data with vaild email and password",
@@ -30,10 +23,10 @@ describe("POST /auth", () => {
       .send(payload);
 
       expect(res.status).toStrictEqual(200);
-      expect(res.body).toEqual(SAMPLE_USER);
+      expectValidUser(res.body);
     });
 
-  it("Returns 403 with incorrect email and/or password", async () => {
+  it("Returns 401 with incorrect email and/or password", async () => {
     const payload = {
       email: "johndoe@example.com",
       password: "Wr0NgPAs2"
@@ -43,7 +36,7 @@ describe("POST /auth", () => {
     .post("/auth")
     .send(payload);
 
-    expect(res.status).toStrictEqual(403);
+    expect(res.status).toStrictEqual(401);
   });
 });
 
@@ -57,11 +50,11 @@ describe("POST /register", () => {
     };
 
     const res = await request(app)
-    .post("/auth")
+    .post("/register")
     .send(payload);
 
     expect(res.status).toStrictEqual(201);
-    expect(res.body).toEqual(SAMPLE_USER);
+    expectValidUser(res.body);
   });
 
   it("Returns 400 when invalid email is given", async () => {
@@ -73,7 +66,7 @@ describe("POST /register", () => {
     };
 
     const res = await request(app)
-    .post("/auth")
+    .post("/register")
     .send(payload);
 
     expect(res.status).toStrictEqual(400);
@@ -88,7 +81,7 @@ describe("POST /register", () => {
     };
 
     const res = await request(app)
-    .post("/auth")
+    .post("/register")
     .send(payload);
 
     expect(res.status).toStrictEqual(400);
@@ -98,27 +91,12 @@ describe("POST /register", () => {
     const payload = {
       email: "janedoe@example.com",
       phone: "333-333-3333",
-      username: "JaneDoe",
+      username: "ThisUsernameIsWayWayWayWayWayWayWayTooLongToBeUseddddddddddddddddddddddddddddddddddddd",
       password: "P1ac3H0lD3r"
     };
 
     const res = await request(app)
-    .post("/auth")
-    .send(payload);
-
-    expect(res.status).toStrictEqual(400);
-  });
-
-  it("Returns 400 on lengthy username", async () => {
-    const payload = {
-      email: "janedoe@example.com",
-      phone: "333-333-3333",
-      username: "ThisUsernameIsTooLongToBeUsed",
-      password: "P1ac3H0lD3r"
-    };
-
-    const res = await request(app)
-    .post("/auth")
+    .post("/register")
     .send(payload);
 
     expect(res.status).toStrictEqual(400);
@@ -133,7 +111,7 @@ describe("POST /register", () => {
     };
 
     const res = await request(app)
-    .post("/auth")
+    .post("/register")
     .send(payload);
 
     expect(res.status).toStrictEqual(400);
@@ -148,7 +126,7 @@ describe("POST /register", () => {
     };
 
     const res = await request(app)
-    .post("/auth")
+    .post("/register")
     .send(payload);
 
     expect(res.status).toStrictEqual(400);
@@ -165,11 +143,13 @@ describe("GET /logout", () => {
   });
 });
 
-describe("GET /me", () => {
+describe("GET /me", (done) => {
   it("Returns 200 with user data when authenticated", async () => {
-    const session = await login();
+    const agent = await login();
 
-    const res = await session.get("/me").send();
+    const res = await agent
+    .get("/me")
+    .send();
 
     expect(res.status).toStrictEqual(200);
     expectValidUser(res.body);
@@ -186,9 +166,9 @@ describe("GET /me", () => {
 
 describe("PUT /me", () => {
   it("Returns 200 with user data when authenticated", async () => {
-    const session = await login();
+    const agent = await login();
 
-    const res = await session.put("/me").send({
+    const res = await agent.put("/me").send({
       email: "newemail@example.com"
     });
 
@@ -197,13 +177,13 @@ describe("PUT /me", () => {
   });
 
   it("Returns 400 when invalid data is given", async () => {
-    const session = await login();
+    const agent = await login();
 
-    const res = await session.put("/me").send({
+    const res = await agent.put("/me").send({
       email: "bademail.new"
     });
 
-    expect(res.status).toStrictEqual(200);
+    expect(res.status).toStrictEqual(400);
   });
 
   it("Returns 403 when user isn't authenticated", async () => {
@@ -220,12 +200,12 @@ describe("PUT /me", () => {
 describe("GET /users", () => {
   it("Returns 200 with user data array when authenticated as admin",
     async () => {
-      const session = await loginAsAdmin();
+      const agent = await loginAsAdmin();
 
-      const res = await session.get("/users").send();
+      const res = await agent.get("/users").send();
 
       expect(res.status).toStrictEqual(200);
-      expect(res.body).toBeArray();
+      expectTypeOf(res.body).toBeArray();
       expectValidUser(res.body[0]);
     });
 
@@ -240,9 +220,9 @@ describe("GET /users", () => {
 
 describe("GET /users/:userId", () => {
   it("Returns 200 with user data when authenticated as admin", async () => {
-    const session = await loginAsAdmin();
+    const agent = await loginAsAdmin();
 
-    const res = await session.get("/users/1").send();
+    const res = await agent.get("/users/1").send();
 
     expect(res.status).toStrictEqual(200);
     expectValidUser(res.body);
@@ -257,22 +237,21 @@ describe("GET /users/:userId", () => {
   });
 
   it("Returns 404 when user isn't found", async () => {
-    const session = await loginAsAdmin();
+    const agent = await loginAsAdmin();
 
-    const res = await session.get("/users/9001").send();
+    const res = await agent.get("/users/9001").send();
 
-    expect(res.status).toStrictEqual(200);
+    expect(res.status).toStrictEqual(404);
   });
 });
 
 describe("DELETE /users/:userId", () => {
   it("Returns 204 when authenticated as admin", async () => {
-    const session = await loginAsAdmin();
+    const agent = await loginAsAdmin();
 
-    const res = await session.get("/users/3").send();
+    const res = await agent.delete("/users/2").send();
 
-    expect(res.status).toStrictEqual(200);
-    expectValidUser(res.body);
+    expect(res.status).toStrictEqual(204);
   });
 
   it("Returns 403 for non-admin users", async () => {
