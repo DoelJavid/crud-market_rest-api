@@ -118,16 +118,23 @@ vi.mock("../src/db.js", () => ({
 
   renameCategory: vi.fn(async () => {}),
 
-  getProducts: vi.fn(async () => sampleProducts.map((product) => ({
-    id: product.id,
-    name: product.name,
-    description: product.description,
-    price: product.price,
-    stock: product.stock,
-    category: sampleCategories.find(
+  getProducts: vi.fn(async () => sampleProducts.map((product) => {
+    const category = sampleCategories.find(
       (category) => category.id === product.categoryId
-    )
-  }))),
+    );
+
+    if (category) {
+      return {
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        stock: product.stock,
+        category: category.name
+      }
+    }
+    return null;
+  })),
 
   getProductById: vi.fn(async (productId) => {
     const product = sampleProducts.find((product) => product.id ===
@@ -144,14 +151,14 @@ vi.mock("../src/db.js", () => ({
           description: product.description,
           price: product.price,
           stock: product.stock,
-          category
+          category: category.name
         }
       }
     }
     return null;
   }),
 
-  createProduct: vi.fn(async () => {}),
+  addProduct: vi.fn(async () => {}),
 
   updateProduct: vi.fn(async () => {}),
 

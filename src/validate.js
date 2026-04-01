@@ -71,7 +71,7 @@ export function validateUsername(username) {
   Validates the given password and throws if the password isn't valid.
 
   @param {string} password
-  @return {boolean}
+  @return {string}
 */
 export function validatePassword(password) {
   if (typeof password !== "string") {
@@ -83,4 +83,78 @@ export function validatePassword(password) {
   }
 
   return password;
+}
+
+/**
+  Validates the given product name and throws if it's invalid.'
+
+  @param {string} name
+  @return {string}
+*/
+export function validateProductName(name) {
+  if (typeof name !== "string") {
+    throw new Error("Product name should be a string!");
+  }
+
+  if (!/[a-z]+( [a-z])*/i.test(name)) {
+    throw new Error("Product name should be made of only letters and spaces!")
+  }
+
+  return name
+}
+
+/**
+  Validates the given product category and throws if it's invalid.'
+
+  @param {string} name
+  @return {string}
+*/
+export function validateProductCategory(name) {
+  if (typeof name !== "string") {
+    throw new Error("Product category should be a string!");
+  }
+
+  if (name < 2 || name > 32) {
+    throw new Error("Product category should be less than 32 characters long!");
+  }
+
+  if (!/[A-Z]^[a-z]+$/i.test(name)) {
+    throw new Error("Product category must be alphanumeric!");
+  }
+
+  return name
+}
+
+/**
+  Validates the given product object and throws if it's not valid.
+
+  @param {Object} product
+  @param {string} product.name
+  @param {string} product.description
+  @param {number} product.price
+  @param {number} product.stock
+  @param {string} product.category
+  @return {boolean}
+*/
+export function validateProduct(product) {
+  validateProductName(product.name);
+  validateProductCategory(product.category);
+
+  if (isNaN(product.price)) {
+    throw new Error("Product price should be a number!");
+  }
+
+  if (product.price <= 0) {
+    throw new Error("Product price should be greater than zero!");
+  }
+
+  if (isNaN(product.stock)) {
+    throw new Error("Product stock should be a number!");
+  }
+
+  if (Number.isInteger(Number(product.stock))) {
+    throw new Error("Product stock should be an integer value!");
+  }
+
+  return product;
 }
