@@ -1,10 +1,7 @@
 import { describe, it, expect, expectTypeOf } from "vitest";
 import request from "supertest";
-import session from "supertest-session";
 import app from "../src/app.js";
 import {
-  sampleAdmin,
-  sampleUser,
   login,
   loginAsAdmin,
   expectValidUser
@@ -14,7 +11,7 @@ describe("POST /auth", () => {
   it("Returns 200 with user data with vaild email and password",
     async (done) => {
       const payload = {
-        email: "johndoe@example.com",
+        email: "janedoe@example.com",
         password: "1234abcd!@#$"
       };
 
@@ -28,7 +25,7 @@ describe("POST /auth", () => {
 
   it("Returns 401 with incorrect email and/or password", async () => {
     const payload = {
-      email: "johndoe@example.com",
+      email: "janedoe@example.com",
       password: "Wr0NgPAs2"
     };
 
@@ -43,9 +40,9 @@ describe("POST /auth", () => {
 describe("POST /register", () => {
   it("Returns 201 with user data when successful", async () => {
     const payload = {
-      email: "janedoe@example.com",
+      email: "jdoe@example.com",
       phone: "333-333-3333",
-      username: "JaneDoe",
+      username: "JDoe",
       password: "P1ac3H0lD3r"
     };
 
@@ -89,7 +86,7 @@ describe("POST /register", () => {
 
   it("Returns 400 on lengthy username", async () => {
     const payload = {
-      email: "janedoe@example.com",
+      email: "jdoe@example.com",
       phone: "333-333-3333",
       username: "ThisUsernameIsWayWayWayWayWayWayWayTooLongToBeUseddddddddddddddddddddddddddddddddddddd",
       password: "P1ac3H0lD3r"
@@ -104,7 +101,7 @@ describe("POST /register", () => {
 
   it("Returns 400 on username with symbols that aren't '_'", async () => {
     const payload = {
-      email: "janedoe@example.com",
+      email: "jdoe@example.com",
       phone: "333-333-3333",
       username: "#Invalid^Name!!!",
       password: "P1ac3H0lD3r"
@@ -119,7 +116,7 @@ describe("POST /register", () => {
 
   it("Returns 400 when password is less than 8 chars long", async () => {
     const payload = {
-      email: "janedoe@example.com",
+      email: "jdoe@example.com",
       phone: "333-333-3333",
       username: "JaneDoe",
       password: "1234"
@@ -263,9 +260,9 @@ describe("DELETE /users/:userId", () => {
   });
 
   it("Returns 404 when user isn't found", async () => {
-    const session = await loginAsAdmin();
+    const agent = await loginAsAdmin();
 
-    const res = await session.get("/users/91204").send();
+    const res = await agent.get("/users/91204").send();
 
     expect(res.status).toStrictEqual(404);
   });

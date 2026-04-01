@@ -4,6 +4,7 @@ import express from "express";
 import session from "express-session";
 import passport from "passport";
 import usersRouter from "./routes/users.js";
+import productsRouter from "./routes/products.js";
 import "./passport.js";
 
 const app = express();
@@ -27,6 +28,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 app.use("/", usersRouter);
+app.use("/", productsRouter);
 
 app.get("/", (req, res) => {
   res.send("Hello world!");

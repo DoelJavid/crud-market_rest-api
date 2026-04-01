@@ -2,7 +2,7 @@ import "dotenv/config";
 import bcrypt from "bcrypt";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { users } from "./db/schema.js";
+import { users, products, categories } from "./db/schema.js";
 
 const db = drizzle({
   connection: process.env.DATABASE_URL,
@@ -14,6 +14,10 @@ const db = drizzle({
 // handle anything else besides that. Please handle things like password
 // hashing and validation outside of this file.
 //
+
+///////////////////////////////////////////////////////////////////////////////
+// User Queries
+///////////////////////////////////////////////////////////////////////////////
 
 /**
   @typedef {Object} User
@@ -157,4 +161,177 @@ export async function getUserPriveleges(userId) {
   .from(users)
   .where(eq(users.id, userId));
   return result;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Product Queries
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+  Lists all the current categories with their respective categoryIds.
+
+  @return {{
+    id: number;
+    name: string;
+  }}
+*/
+export async function getCategories() {
+  return await db.select({
+      id: categories.id,
+      name: categories.name
+    })
+  .from(categories);
+}
+
+/**
+  Adds the category with the given name.
+
+  @param {string} name
+*/
+export async function addCategory(name) {
+  await db.insert(categories)
+  .values({ name });
+}
+
+/**
+  Removes the category with the given name.
+
+  @param {string} name
+*/
+export async function removeCategory(name) {
+  await db.delete(categories)
+  .where(eq(categories.name, name));
+}
+
+/**
+  Renames the category with the given name.
+
+  @param {string} oldName
+  @param {string} newName
+*/
+export async function renameCategory(oldName, newName) {
+  await db.update(categories)
+  .set({ name: newName })
+  .where(eq(categories.name, oldName));
+}
+
+
+
+/**
+  @typedef {Object} Product
+  @property {number} id
+  @property {string} name
+  @property {string} description
+  @property {number} price
+  @property {number} stock
+  @property {string} category
+*/
+
+/**
+  Returns a list of products that match a given query.
+
+  @param {{
+    q: string;
+    limit: number;
+    page: number;
+  }?} queryData
+  @return {Array<Product>}
+*/
+export async function getProducts(queryData) {
+  const result = await db.select({
+      id: products.id,
+      name: products.name,
+      description: products.description,
+      price: products.price,
+      stock: products.stock,
+      category: categories.name
+    })
+  .from(products)
+  .innerJoin(categories, eq(products.categoryId, categories.id));
+}
+
+/**
+  Returns the product with the given productId.
+
+  @param {number} productId
+  @return {Product}
+*/
+export async function getProductById(productId) {
+  const result = await db.select({
+      id: products.id,
+      name: products.name,
+      description: products.description,
+      price: products.price,
+      stock: products.stock,
+      category: categories.name
+    })
+  .from(products)
+  .innerJoin(categories, eq(products.categoryId, categories.id))
+  .where(eq(products.id, productId));
+}
+
+/**
+  Attempts to create a product with the given product data.
+
+  @param {Object} productData
+*/
+export async function createProduct(productData) {
+  let categoryId = null;
+  if (productData.category) {
+    categoryId = await db.select({
+        name: categories.name
+      })
+    .from(categories)
+    .where(eq(categories.name, productData.category));
+  }
+
+  await db.insert(products)
+  .values({
+    name: productData.name,
+    description: productData.description,
+    price: productData.price,
+    stock: productData.stock,
+    categoryId: categoryId || productData.categoryId
+  });
+}
+
+/**
+  Attempts to update the product with the given productId.
+
+  @param {number} productId
+  @param {Object} productData
+*/
+export async function updateProduct(productId, productData) {
+  let categoryId = null;
+  if (productData.category) {
+    categoryId = await db.select({
+        name: categories.name
+      })
+    .from(categories)
+    .where(eq(categories.name, productData.category));
+  }
+
+  await db.update(products)
+  .set({
+    ...(productData.name ? { name: productData.name } : {}),
+    ...(
+      productData.description
+      ? { description: productData.description }
+      : {}
+    ),
+    ...(productData.price ? { price: productData.price } : {}),
+    ...(productData.stock ? { stock: productData.stock } : {}),
+    ...(categoryId ? { categoryId } : {})
+  })
+  .where(eq(products.id, productId));
+}
+
+/**
+  Deletes the product with the given productId.
+
+  @param {number} productId
+*/
+export async function deleteProduct(productId) {
+  await db.delete(products)
+  .where(eq(products.id, productId));
 }
