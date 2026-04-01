@@ -1,8 +1,13 @@
 import "dotenv/config";
 import bcrypt from "bcrypt";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { users, products, categories } from "./db/schema.js";
+import {
+  users,
+  products,
+  categories,
+  cartItems
+} from "./db/schema.js";
 
 const db = drizzle({
   connection: process.env.DATABASE_URL,
@@ -334,4 +339,108 @@ export async function updateProduct(productId, productData) {
 export async function deleteProduct(productId) {
   await db.delete(products)
   .where(eq(products.id, productId));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Cart Queries
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+  @typedef {Object} CartItem
+  @property {string} productName
+  @property {number} quantity
+  @property {number} price
+*/
+
+/**
+  Obtains all products in the user's cart.
+
+  @return {Array<CartItem>}
+*/
+export async function getCartItems(userId) {
+  await db.select({
+      productName: products.name,
+      quantity: cartItems.productCount,
+      price: products.price
+    })
+  .from(cartItems)
+  .innerJoin(products, eq(cartItems.productId, products.id))
+  .where(eq(cartItems.userId, userId));
+}
+
+/**
+  Returns a product within the user's cart or null if the item isn't in the
+  user's cart.
+
+  @return {Product?}
+*/
+export async function getItemInCart(userId, productId) {
+  const result = await db.select({
+      id: products.id,
+      name: products.name,
+      description: products.description,
+      price: products.price,
+      stock: products.stock,
+      category: categories.name
+    })
+  .from(cartItems)
+  .innerJoin(products, eq(cartItems.productId, products.id))
+  .innerJoin(categories, eq(products.categoryId, categories.id))
+  .where(
+    and(eq(cartItems.userId, userId), eq(products.id, productId))
+  );
+}
+
+/**
+  Adds the amount of product of the given productId to the user's cart.
+
+  @param {number} userId
+  @param {number} productId
+  @param {number} amount
+*/
+export async function addCartItem(userId, productId, amount) {
+  await db.insert(cartItems)
+  .values({
+    userId,
+    productId,
+    productCount: amount
+  });
+}
+
+/**
+  Updates the quantity of the product within the user's cart.
+
+  @param {number} userId
+  @param {number} productId
+  @param {number} amount
+*/
+export async function updateCartItem(userId, productId, amount) {
+  await db.update(cartItems)
+  .set({ productCount: amount })
+  .where(
+    and(eq(cartItems.userId, userId), eq(cartItems.productId, productId))
+  );
+}
+
+/**
+  Deletes the item with the given productId from the user's cart.
+
+  @param {number} userId
+  @param {number} productId
+*/
+export async function removeCartItem(userId, productId) {
+  await db.delete(cartItems)
+  .where(
+    and(eq(cartItems.userId, userId), eq(cartItems.productId, productId))
+  );
+}
+
+/**
+  Clears the given user's cart.
+
+  @param {number} userId
+*/
+export async function clearCart(userId) {
+  await db.delete(cartItems)
+  .where(eq(cartItems.userId, userId));
 }
