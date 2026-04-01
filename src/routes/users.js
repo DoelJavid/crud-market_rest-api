@@ -3,12 +3,10 @@ import bcrypt from "bcrypt";
 import passport from "passport";
 import {
   registerUser,
-  authenticateUser,
   updateUser,
   deleteUser,
   getUserById,
   getUsers,
-  getUserPriveleges
 } from "../db";
 import {
   validateEmail,
@@ -16,6 +14,7 @@ import {
   validateUsername,
   validatePassword
 } from "../validate.js";
+import { authorize } from "../middleware";
 
 const SALT_ROUNDS = 10;
 
@@ -66,59 +65,41 @@ usersRouter.get("/logout", (req, res, next) => {
 });
 
 usersRouter.route("/me")
-.get((req, res) => {
-  if (req.user) {
-    res.status(200).send(req.user);
-  } else {
-    res.status(403).send("Forbidden.");
-  }
+.get(authorize("user"), (req, res) => {
+  res.status(200).send(req.user);
 })
-.put(async (req, res) => {
+.put(authorize("user"), async (req, res) => {
   try {
-    if (req.user) {
-      const newUserdata = {
-        email: req.body.email && validateEmail(req.body.email),
-        phone: req.body.phone && validatePhone(req.body.phone),
-        username: req.body.username && validateUsername(req.body
-        .username),
-        password: req.body.password && validatePassword(req.body.password)
-      }
-
-      if (newUserdata.password) {
-        const salt = await bcrypt.genSalt(SALT_ROUNDS);
-        newUserdata.password = await bcrypt.hash(newUserdata.password,
-          salt);
-      }
-
-      updateUser(req.user.id, newUserdata);
-
-      req.user = {
-        id: req.user.id,
-        email: newUserdata.email || req.user.email,
-        phone: newUserdata.phone || req.user.phone,
-        username: newUserdata.username || req.user.username
-      };
-
-      res.status(200).json(req.user);
-    } else {
-      res.status(403).send("Forbidden.");
+    const newUserdata = {
+      email: req.body.email && validateEmail(req.body.email),
+      phone: req.body.phone && validatePhone(req.body.phone),
+      username: req.body.username && validateUsername(req.body
+      .username),
+      password: req.body.password && validatePassword(req.body.password)
     }
+
+    if (newUserdata.password) {
+      const salt = await bcrypt.genSalt(SALT_ROUNDS);
+      newUserdata.password = await bcrypt.hash(newUserdata.password,
+        salt);
+    }
+
+    updateUser(req.user.id, newUserdata);
+
+    req.user = {
+      id: req.user.id,
+      email: newUserdata.email || req.user.email,
+      phone: newUserdata.phone || req.user.phone,
+      username: newUserdata.username || req.user.username
+    };
+
+    res.status(200).json(req.user);
   } catch (err) {
     res.status(400).send("Invalid data given!");
   }
 });
 
-async function validateAdmin(req, res, next) {
-  if (req.user) {
-    const privilages = await getUserPriveleges(req.user.id);
-    if (privilages === "admin" || privilages === "owner") {
-      return next();
-    }
-  }
-  res.status(403).send("Forbidden.");
-}
-
-usersRouter.get("/users", validateAdmin, async (req, res) => {
+usersRouter.get("/users", authorize("admin"), async (req, res) => {
   try {
     const users = await getUsers(req.body);
     res.status(200).json(users);
@@ -128,7 +109,7 @@ usersRouter.get("/users", validateAdmin, async (req, res) => {
 });
 
 usersRouter.route("/users/:userId")
-.get(validateAdmin, async (req, res) => {
+.get(authorize("admin"), async (req, res) => {
   try {
     const user = await getUserById(Number(req.params.userId));
     if (user) {
@@ -140,7 +121,7 @@ usersRouter.route("/users/:userId")
     res.status(500).send("Internal server error!");
   }
 })
-.delete(validateAdmin, async (req, res) => {
+.delete(authorize("admin"), async (req, res) => {
   try {
     const user = await getUserById(Number(req.params.userId));
     if (user) {
