@@ -103,19 +103,10 @@ describe("PUT /cart/:productId", () => {
     expect(res.status).toStrictEqual(204);
   });
 
-  it("Returns 400 if invalid product ID was given", async () => {
-    const agent = await login();
-
-    const res = await agent.put("/cart/100001")
-    .send({ quantity: 3 });
-
-    expect(res.status).toStrictEqual(400);
-  });
-
   it("Returns 400 if invalid quantity was given", async () => {
     const agent = await login();
 
-    const res = await agent.put("/cart")
+    const res = await agent.put("/cart/1")
     .send({ quantity: -51 });
 
     expect(res.status).toStrictEqual(400);
@@ -123,10 +114,19 @@ describe("PUT /cart/:productId", () => {
 
   it("Returns 403 if not logged in", async () => {
     const res = await request(app)
-    .put("/cart")
+    .put("/cart/1")
     .send({ quantity: 2 });
 
     expect(res.status).toStrictEqual(403);
+  });
+
+  it("Returns 404 if invalid product ID was given", async () => {
+    const agent = await login();
+
+    const res = await agent.put("/cart/100001")
+    .send({ quantity: 3 });
+
+    expect(res.status).toStrictEqual(404);
   });
 });
 

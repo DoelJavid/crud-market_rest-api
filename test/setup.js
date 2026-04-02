@@ -217,7 +217,11 @@ vi.mock("../src/db.js", () => ({
 
   addCartItem: vi.fn(async () => {}),
 
-  removeCartItem: vi.fn(async () => {})
+  updateCartItem: vi.fn(async () => {}),
+
+  removeCartItem: vi.fn(async () => {}),
+
+  clearCart: vi.fn(async () => {})
 }));
 
 beforeAll(() => {
