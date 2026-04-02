@@ -1,6 +1,8 @@
 import "dotenv/config";
 import { drizzle } from "drizzle-orm/node-postgres";
 import express from "express";
+import cors from "cors";
+import helmet from "helmet";
 import session from "express-session";
 import passport from "passport";
 import usersRouter from "./routes/users.js";
@@ -9,7 +11,11 @@ import "./passport.js";
 
 const app = express();
 
+app.use(helmet());
+app.use(cors());
+
 app.use(express.json());
+
 app.use(session({
   secret: "Keyboard Cat",
   saveUninitialized: true,
@@ -23,7 +29,6 @@ app.use(session({
     sameSite: "strict"
   }
 }));
-
 app.use(passport.initialize());
 app.use(passport.session());
 
