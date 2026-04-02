@@ -373,7 +373,7 @@ paths:
                     - 3
                     - 4
       responses:
-        "200":
+        "201":
           description: Item added successfully
           content:
             application/json:
@@ -411,14 +411,6 @@ paths:
             schema:
               type: object
               properties:
-                productId:
-                  type: number
-                  examples:
-                    - 0
-                    - 1
-                    - 2
-                    - 3
-                    - 4
                 quantity:
                   type: number
                   examples:
@@ -433,6 +425,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CartItem"
+        "204":
+          description: Cart item removed when updated. Used when quantity is zero
         "403":
           description: User isn't authenticated
         "404":

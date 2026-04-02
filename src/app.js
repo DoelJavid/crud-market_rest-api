@@ -7,6 +7,7 @@ import session from "express-session";
 import passport from "passport";
 import usersRouter from "./routes/users.js";
 import productsRouter from "./routes/products.js";
+import cartRouter from "./routes/cart.js";
 import "./passport.js";
 
 const app = express();
@@ -34,6 +35,7 @@ app.use(passport.session());
 
 app.use("/", usersRouter);
 app.use("/", productsRouter);
+app.use("/", cartRouter);
 
 app.get("/", (req, res) => {
   res.send("Hello world!");

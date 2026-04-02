@@ -1,4 +1,5 @@
-import { vi } from "vitest";
+import { vi, expect, beforeAll } from "vitest";
+import * as z from "zod";
 import {
   sampleAdmin,
   sampleUser,
@@ -63,6 +64,23 @@ const sampleProducts = [{
     categoryId: 2
   }
 ];
+
+const sampleCartItems = [{
+    userId: 3,
+    productId: 1,
+    quantity: 1
+  },
+  {
+    userId: 3,
+    productId: 2,
+    quantity: 1
+  },
+  {
+    userId: 3,
+    productId: 3,
+    quantity: 2
+  }
+]
 
 vi.mock("../src/db.js", () => ({
   // User Queries
@@ -162,5 +180,62 @@ vi.mock("../src/db.js", () => ({
 
   updateProduct: vi.fn(async () => {}),
 
-  deleteProduct: vi.fn(async () => {})
+  deleteProduct: vi.fn(async () => {}),
+
+  // Cart Queries
+
+  getCartItems: vi.fn(
+    async (userId) => sampleCartItems
+    .filter((item) => item.userId === userId)
+    .map((item) => {
+      const product = sampleProducts.find(
+        (p) => p.id === item.productId
+      );
+      if (product) {
+        return {
+          productName: product.name,
+          quantity: item.quantity,
+          price: product.price
+        };
+      }
+    })
+  ),
+
+  getItemInCart: vi.fn(async (userId, productId) => {
+    const cartItem = sampleCartItems.find(
+      (item) =>
+      item.userId === userId && item.productId === productId
+    );
+    const product = sampleProducts.find(
+      (item) => item.id === productId
+    );
+    if (cartItem && product) {
+      return product;
+    }
+    return null;
+  }),
+
+  addCartItem: vi.fn(async () => {}),
+
+  removeCartItem: vi.fn(async () => {})
 }));
+
+beforeAll(() => {
+  expect.extend({
+    toMatchSchema: (recieved, expected) => {
+      try {
+        expected.parse(recieved);
+      } catch (err) {
+        return {
+          message: () =>
+            `expected value to match schema\n${z.prettifyError(err)}`,
+          pass: false
+        };
+      }
+      return {
+        message: () => "value matches schema",
+        pass: true
+      };
+    }
+  });
+});
