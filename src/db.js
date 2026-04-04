@@ -1,12 +1,14 @@
 import "dotenv/config";
 import bcrypt from "bcrypt";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import {
   users,
   products,
   categories,
-  cartItems
+  cartItems,
+  orders,
+  ordersItems
 } from "./db/schema.js";
 
 const db = drizzle({
@@ -443,4 +445,142 @@ export async function removeCartItem(userId, productId) {
 export async function clearCart(userId) {
   await db.delete(cartItems)
   .where(eq(cartItems.userId, userId));
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Order Queries
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+  @typedef {Object} OrderItem
+  @property {number} productId
+  @property {string} productName
+  @property {number} quantity
+*/
+
+/**
+  @typedef {Object} Order
+  @property {string} id
+  @param {Object} deliveryAddress
+  @param {string} deliveryCity
+  @param {string} deliveryState
+  @property {Array<OrderItem>} items
+*/
+
+/**
+  Gets all orders with the given query data.
+
+  @param {Object} queryData
+  @param {string} queryData.q
+  @param {number} queryData.limit
+  @param {number} queryData.page
+  @return {Array<Order>}
+*/
+export async function getOrders(queryData) {
+  // This has probably got to be the most complicated database query I ever had
+  // to implement in this entire project.
+
+  const { q = "", limit = 50, page = 0 } = queryData;
+  const orderList = await db.select({
+      id: orders.id,
+      deliveryAddress: orders.deliveryAddress,
+      deliveryCity: orders.deliveryCity,
+      deliveryState: orders.deliveryState
+    })
+  .from(orders)
+  .limit(Number(limit))
+  .offset(Number(limit) * Number(page));
+
+  const selectedOrderIds = orderList.map((order) => order.id);
+  const listedItems = await db.select({
+      orderId: ordersItems.orderId,
+      productId: ordersItems.productId,
+      productName: products.name,
+      quantity: ordersItems.productCount
+    })
+  .from(ordersItems)
+  .innerJoin(products, eq(ordersItems.productId, products.id))
+  .where(inArray(ordersItems.productId, selectedOrderIds));
+
+  return orderList.map((order) => ({
+    ...order,
+    items: listedItems.filter((item) => item.orderId === order.id)
+    .map((item) => ({
+      productId: item.productId,
+      productName: item.productName,
+      quantity: item.quantity
+    }))
+  }));
+}
+
+/**
+  Gets the order with the given orderId.
+
+  @param {number} orderId
+  @return {Order}
+*/
+export async function getOrderById(orderId) {
+  const order = await db.select({
+      id: orders.id,
+      deliveryAddress: orders.deliveryAddress,
+      deliveryCity: orders.deliveryCity,
+      deliveryState: orders.deliveryState
+    })
+  .from(orders)
+  .where(eq(orders.id, orderId))
+  .limit(1);
+
+  const orderItems = await db.select({
+      productId: ordersItems.productId,
+      productName: products.name,
+      quantity: ordersItems.productCount
+    })
+  .from(ordersItems)
+  .where(eq(ordersItems.orderId, orderId));
+
+  return {
+    ...order,
+    items: orderItems
+  };
+}
+
+/**
+  Creates a new order with the given item IDs.
+
+  @param {number} userId,
+  @param {Object} shippingAddress
+  @param {string} shippingAddress.city
+  @param {string} shippingAddress.state
+  @param {string} shippingAddress.address
+  @param {string} zip
+  @param {Array<Object>} items
+  @param {number} items.productId
+  @param {number} items.quantity
+*/
+export async function createOrder(userId, shippingAddress, itemIds) {
+  const newOrderId = await db.insert(orders)
+  .values({
+    userId,
+    deliveryAddress: shippingAddress.address,
+    deliveryCity: shippingAddress.city,
+    deliveryState: shippingAddress.state,
+  })
+  .returning({
+    id: orders.id
+  });
+
+  await db.insert(ordersItems)
+  .values(itemIds.map((item) => ({
+    orderId: newOrderId,
+    productId: item.productId,
+    productCount: item.quantity
+  })));
+}
+
+export async function deleteOrder(orderId) {
+  await db.delete(ordersItems)
+  .where(eq(ordersItems.orderId, orderId));
+
+  await db.delete(orders)
+  .where(eq(orders.id, orderId));
 }

@@ -80,7 +80,12 @@ const sampleCartItems = [{
     productId: 3,
     quantity: 2
   }
-]
+];
+
+const sampleOrders = [{},
+  {},
+  {}
+];
 
 vi.mock("../src/db.js", () => ({
   // User Queries
@@ -221,7 +226,17 @@ vi.mock("../src/db.js", () => ({
 
   removeCartItem: vi.fn(async () => {}),
 
-  clearCart: vi.fn(async () => {})
+  clearCart: vi.fn(async () => {}),
+
+  // Order Queries
+
+  getOrders: vi.fn(async () => sampleOrders),
+
+  getOrderById: vi.fn(async () => sampleOrders.find()),
+
+  createOrder: vi.fn(async () => {}),
+
+  deleteOrder: vi.fn(async () => {})
 }));
 
 beforeAll(() => {

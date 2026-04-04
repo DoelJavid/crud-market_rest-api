@@ -459,8 +459,7 @@ paths:
                 cardNumber:
                   type: string
                   examples:
-                    # Example card numbers found here:
-                    # https://docs.payload.com/apis/payments/test-cards/
+
                     - "4242 4242 4242 4242"
                     - "5103 2088 7967 2792"
                     - "3700 000000 00002"
