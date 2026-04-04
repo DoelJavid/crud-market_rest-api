@@ -131,6 +131,22 @@ export async function getUserById(userId) {
 }
 
 /**
+  Attempts to obtain the owner of the application.
+
+  @return {User?}
+*/
+export async function getOwner() {
+  return await db.select({
+      id: users.id,
+      username: users.username,
+      email: users.email,
+      phone: users.phone
+    })
+  .from(users)
+  .where(eq(users.role, "owner"))[0];
+}
+
+/**
   Returns a list of users that match a given query.
 
   @param {{
