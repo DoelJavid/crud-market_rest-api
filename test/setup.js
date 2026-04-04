@@ -208,7 +208,7 @@ vi.mock("../src/db.js", () => ({
     return null;
   }),
 
-  addProduct: vi.fn(async () => {}),
+  createProduct: vi.fn(async () => {}),
 
   updateProduct: vi.fn(async () => {}),
 

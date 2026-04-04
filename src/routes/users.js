@@ -7,14 +7,14 @@ import {
   deleteUser,
   getUserById,
   getUsers,
-} from "../db";
+} from "../db.js";
 import {
   validateEmail,
   validatePhone,
   validateUsername,
   validatePassword
 } from "../validate.js";
-import { authorize } from "../middleware";
+import { authorize } from "../middleware.js";
 
 const SALT_ROUNDS = 10;
 
