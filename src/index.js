@@ -1,7 +1,7 @@
 import readline from "readline";
 import bcrypt from "bcrypt";
 import app from "./app.js";
-import { registerUser, getOwner } from "./db.js";
+import { registerUser, updateUser, getOwner } from "./db.js";
 import {
   validateUsername,
   validatePassword,

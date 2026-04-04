@@ -153,7 +153,9 @@ vi.mock("../src/db.js", () => ({
   getUserPriveleges: vi.fn(async (userId) => {
     const user = sampleUsers.find((user) => user.id === userId);
     if (user) {
-      return user.role;
+      return {
+        role: user.role
+      };
     }
     return null;
   }),

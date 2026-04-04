@@ -1,3 +1,4 @@
+import passport from "passport";
 import { getUserPriveleges } from "./db.js";
 
 /**
@@ -8,7 +9,7 @@ export function authorize(role) {
   switch (role) {
     case "user":
       return (req, res, next) => {
-        if (req.user) {
+        if (req.isAuthenticated()) {
           next();
         } else {
           res.status(403).send("Forbidden.");
@@ -17,9 +18,9 @@ export function authorize(role) {
     case "admin":
     case "owner":
       return async (req, res, next) => {
-        if (req.user) {
+        if (req.isAuthenticated()) {
           const privilages = await getUserPriveleges(req.user.id);
-          if (privilages === "admin" || privilages === "owner") {
+          if (privilages.role === "admin" || privilages.role === "owner") {
             return next();
           }
         }

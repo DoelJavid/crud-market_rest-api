@@ -27,7 +27,7 @@ productsRouter.route("/products")
 .post(authorize("admin"), async (req, res) => {
   try {
     const product = Product.parse(req.body);
-    createProduct(product);
+    await createProduct(product);
     res.status(201).send(product);
   } catch (err) {
     res.status(400).send("Invalid data given!");

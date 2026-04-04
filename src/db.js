@@ -60,7 +60,7 @@ export async function registerUser(username, passwordHash, email, phone) {
   @return {User?}
 */
 export async function authenticateUser(email, password) {
-  const result = await db.select({
+  const result = (await db.select({
       id: users.id,
       username: users.username,
       email: users.email,
@@ -68,7 +68,11 @@ export async function authenticateUser(email, password) {
       phone: users.phone
     })
   .from(users)
-  .where(eq(users.email, email));
+  .where(eq(users.email, email)))[0];
+
+  if (!result) {
+    return null;
+  }
 
   const passwordMatches = await bcrypt.compare(password, result.password);
   if (passwordMatches) {
@@ -94,9 +98,10 @@ export async function updateUser(userId, newData) {
     await db.update(users)
     .set({
       ...(newData.username ? { username: newData.username } : {}),
-      ...(newData.password ? { username: newData.password } : {}),
-      ...(newData.email ? { username: newData.email } : {}),
-      ...(newData.phone ? { username: newData.phone } : {})
+      ...(newData.password ? { password: newData.password } : {}),
+      ...(newData.email ? { email: newData.email } : {}),
+      ...(newData.phone ? { phone: newData.phone } : {}),
+      ...(newData.role ? { role: newData.role } : {})
     })
     .where(eq(users.id, userId));
   }
@@ -120,14 +125,14 @@ export async function deleteUser(userId) {
   @return {User?}
 */
 export async function getUserById(userId) {
-  return await db.select({
+  return (await db.select({
       id: users.id,
       username: users.username,
       email: users.email,
       phone: users.phone
     })
   .from(users)
-  .where(eq(users.id, userId));
+  .where(eq(users.id, userId)))[0];
 }
 
 /**
@@ -136,14 +141,14 @@ export async function getUserById(userId) {
   @return {User?}
 */
 export async function getOwner() {
-  return await db.select({
+  return (await db.select({
       id: users.id,
       username: users.username,
       email: users.email,
       phone: users.phone
     })
   .from(users)
-  .where(eq(users.role, "owner"))[0];
+  .where(eq(users.role, "owner")))[0];
 }
 
 /**
@@ -157,7 +162,7 @@ export async function getOwner() {
   @return {Array<User>}
 */
 export async function getUsers(queryData) {
-  const { q = "", limit = 50, page = 0 } = queryData;
+  const { q = "", limit = 50, page = 0 } = queryData || {};
   const result = await db.select({
       id: users.id,
       username: users.username,
@@ -178,12 +183,11 @@ export async function getUsers(queryData) {
   @return {string?}
 */
 export async function getUserPriveleges(userId) {
-  const result = await db.select({
+  return (await db.select({
       role: users.role
     })
   .from(users)
-  .where(eq(users.id, userId));
-  return result;
+  .where(eq(users.id, userId)))[0];
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -191,12 +195,25 @@ export async function getUserPriveleges(userId) {
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
+  @typedef {Object} Category
+  @property {number} id
+  @property {string} name
+*/
+
+/**
+  @typedef {Object} Product
+  @property {number} id
+  @property {string} name
+  @property {string} description
+  @property {number} price
+  @property {number} stock
+  @property {string} category
+*/
+
+/**
   Lists all the current categories with their respective categoryIds.
 
-  @return {{
-    id: number;
-    name: string;
-  }}
+  @return {Category}
 */
 export async function getCategories() {
   return await db.select({
@@ -210,10 +227,15 @@ export async function getCategories() {
   Adds the category with the given name.
 
   @param {string} name
+  @return {Category}
 */
 export async function addCategory(name) {
-  await db.insert(categories)
-  .values({ name });
+  return (await db.insert(categories)
+  .values({ name })
+  .returning({
+    id: categories.id,
+    name: categories.name
+  }))[0];
 }
 
 /**
@@ -238,18 +260,6 @@ export async function renameCategory(oldName, newName) {
   .where(eq(categories.name, oldName));
 }
 
-
-
-/**
-  @typedef {Object} Product
-  @property {number} id
-  @property {string} name
-  @property {string} description
-  @property {number} price
-  @property {number} stock
-  @property {string} category
-*/
-
 /**
   Returns a list of products that match a given query.
 
@@ -261,7 +271,7 @@ export async function renameCategory(oldName, newName) {
   @return {Array<Product>}
 */
 export async function getProducts(queryData) {
-  const result = await db.select({
+  return await db.select({
       id: products.id,
       name: products.name,
       description: products.description,
@@ -280,7 +290,7 @@ export async function getProducts(queryData) {
   @return {Product}
 */
 export async function getProductById(productId) {
-  const result = await db.select({
+  const result = (await db.select({
       id: products.id,
       name: products.name,
       description: products.description,
@@ -290,7 +300,7 @@ export async function getProductById(productId) {
     })
   .from(products)
   .innerJoin(categories, eq(products.categoryId, categories.id))
-  .where(eq(products.id, productId));
+  .where(eq(products.id, productId)))[0];
 }
 
 /**
@@ -299,13 +309,14 @@ export async function getProductById(productId) {
   @param {Object} productData
 */
 export async function createProduct(productData) {
-  let categoryId = null;
-  if (productData.category) {
-    categoryId = await db.select({
-        name: categories.name
-      })
-    .from(categories)
-    .where(eq(categories.name, productData.category));
+  let categoryId = (await db.select({
+      id: categories.id
+    })
+  .from(categories)
+  .where(eq(categories.name, productData.category)))[0];
+
+  if (!categoryId) {
+    categoryId = await addCategory(productData.category);
   }
 
   await db.insert(products)
@@ -314,7 +325,7 @@ export async function createProduct(productData) {
     description: productData.description,
     price: productData.price,
     stock: productData.stock,
-    categoryId: categoryId || productData.categoryId
+    categoryId: categoryId.id || productData.categoryId
   });
 }
 
@@ -393,7 +404,7 @@ export async function getCartItems(userId) {
   @return {Product?}
 */
 export async function getItemInCart(userId, productId) {
-  const result = await db.select({
+  return await (db.select({
       id: products.id,
       name: products.name,
       description: products.description,
@@ -406,7 +417,7 @@ export async function getItemInCart(userId, productId) {
   .innerJoin(categories, eq(products.categoryId, categories.id))
   .where(
     and(eq(cartItems.userId, userId), eq(products.id, productId))
-  );
+  ))[0];
 }
 
 /**
@@ -496,7 +507,7 @@ export async function getOrders(queryData) {
   // This has probably got to be the most complicated database query I ever had
   // to implement in this entire project.
 
-  const { q = "", limit = 50, page = 0 } = queryData;
+  const { q = "", limit = 50, page = 0 } = queryData || {};
   const orderList = await db.select({
       id: orders.id,
       userId: orders.userId,
@@ -537,7 +548,7 @@ export async function getOrders(queryData) {
   @return {Order}
 */
 export async function getOrdersByUserId(userId, queryData) {
-  const { q = "", limit = 50, page = 0 } = queryData;
+  const { q = "", limit = 50, page = 0 } = queryData || {};
   const orderList = await db.select({
       id: orders.id,
       userId: orders.userId,
@@ -579,7 +590,7 @@ export async function getOrdersByUserId(userId, queryData) {
   @return {Order}
 */
 export async function getOrderById(orderId) {
-  const order = await db.select({
+  const order = (await db.select({
       id: orders.id,
       userId: orders.userId,
       deliveryAddress: orders.deliveryAddress,
@@ -587,8 +598,7 @@ export async function getOrderById(orderId) {
       deliveryState: orders.deliveryState
     })
   .from(orders)
-  .where(eq(orders.id, orderId))
-  .limit(1);
+  .where(eq(orders.id, orderId)))[0];
 
   const orderItems = await db.select({
       productId: ordersItems.productId,
