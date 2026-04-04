@@ -7,11 +7,14 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
+    "start": "NODE_ENV=production node src/index.js",
     "dev": "nodemon src/index.js",
     "test": "vitest"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "better-sqlite3": "^12.8.0",
+    "better-sqlite3-session-store": "^0.1.0",
     "card-validator": "^10.0.4",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",

@@ -6,13 +6,22 @@ A REST API for a blatantly fake E-Commerce application.
 
 | Command       | Description                           |
 | ------------- | ------------------------------------- |
-| `npm dev`     | Run the development server.           |
+| `npm start`   | Starts the server in production mode. |
+| `npm dev`     | Starts the server in dev mode.        |
 | `npm test`    | Run all unit tests.                   |
 
 ## Credits:
 
 This project uses:
-* Express
+* bcrypt
+* better-sqlite3
+* card-validator
+* drizzle-orm
+* express
+* helmet
+* libphonenumber-js
 * nodemon
+* passport
+* zod
 
 This project was made for Codecademy.
