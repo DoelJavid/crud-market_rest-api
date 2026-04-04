@@ -8,15 +8,17 @@ import {
 } from "./testutils.js";
 
 const OrdersObject = z.strictObject({
+  id: z.number().positive().int(),
   items: z.array(z.strictObject({
     productName: z.string(),
     quantity: z.number().positive().int(),
     price: z.number().positive()
   })),
   deliverTo: z.strictObject({
-    city: z.string().regex(/[a-z]+/i),
-    state: z.string().regex(/[a-z]+/i),
-    address: z.string().regex(/[0-9]{4} [a-z]+ [a-z]+%.?/)
+    city: z.string().trim().regex(/[a-z]+/i),
+    state: z.string().trim().regex(/[a-z]+/i),
+    address: z.string().trim().regex(/[0-9]{4} [a-z]+ [a-z]+\.?/i),
+    zip: z.string().trim().regex(/[0-9]{5}/)
   })
 });
 
@@ -24,7 +26,7 @@ describe("GET /orders", () => {
   it("Returns 200 with orders when successful", async () => {
     const agent = await login();
 
-    const res = agent.get("/orders")
+    const res = await agent.get("/orders")
     .send();
 
     expect(res.status).toStrictEqual(200);
@@ -33,7 +35,7 @@ describe("GET /orders", () => {
   });
 
   it("Returns 403 when not authenticated", async () => {
-    const res = request(app)
+    const res = await request(app)
     .get("/orders")
     .send();
 
@@ -45,7 +47,7 @@ describe("GET /orders/all", () => {
   it("Returns 200 with orders when successful", async () => {
     const agent = await loginAsAdmin();
 
-    const res = agent.get("/orders/all")
+    const res = await agent.get("/orders/all")
     .send();
 
     expect(res.status).toStrictEqual(200);
@@ -54,7 +56,7 @@ describe("GET /orders/all", () => {
   });
 
   it("Returns 403 when not authenticated as admin", async () => {
-    const res = request(app)
+    const res = await request(app)
     .get("/orders/all")
     .send();
 
@@ -66,14 +68,14 @@ describe("GET /orders/:orderId", () => {
   it("Returns 200 with order info when successful", async () => {
     const agent = await loginAsAdmin();
 
-    const res = agent.get("/orders/1")
+    const res = await agent.get("/orders/1")
     .send();
 
     expect(res.status).toStrictEqual(200);
   });
 
   it("Returns 403 when not authenticated as admin", async () => {
-    const res = request(app)
+    const res = await request(app)
     .get("/orders/1")
     .send();
 
@@ -83,7 +85,7 @@ describe("GET /orders/:orderId", () => {
   it("Returns 404 with invalid order ID", async () => {
     const agent = await loginAsAdmin();
 
-    const res = agent.get("/orders/412805701955")
+    const res = await agent.get("/orders/412805701955")
     .send();
 
     expect(res.status).toStrictEqual(404);
@@ -94,14 +96,14 @@ describe("DELETE /orders/:orderId", () => {
   it("Returns 204 when successful", async () => {
     const agent = await loginAsAdmin();
 
-    const res = agent.get("/orders/1")
+    const res = await agent.delete("/orders/1")
     .send();
 
     expect(res.status).toStrictEqual(204);
   });
 
   it("Returns 403 when not authenticated as admin", async () => {
-    const res = request(app)
+    const res = await request(app)
     .delete("/orders/1")
     .send();
 
@@ -111,7 +113,7 @@ describe("DELETE /orders/:orderId", () => {
   it("Returns 404 with invalid order ID", async () => {
     const agent = await loginAsAdmin();
 
-    const res = agent.get("/orders/4280428947")
+    const res = await agent.delete("/orders/4280428947")
     .send();
 
     expect(res.status).toStrictEqual(404);

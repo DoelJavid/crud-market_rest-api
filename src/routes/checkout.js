@@ -51,7 +51,6 @@ checkoutRouter.post("/checkout", authorize("user"), async (req, res) => {
     res.status(201).send("Order created successfully!");
   } catch (err) {
     res.status(400).send("Invalid data given!");
-    console.log(err);
     return;
   }
 })

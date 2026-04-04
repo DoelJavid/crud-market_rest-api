@@ -82,9 +82,36 @@ const sampleCartItems = [{
   }
 ];
 
-const sampleOrders = [{},
-  {},
-  {}
+const sampleOrders = [{
+    id: 1,
+    items: [],
+    deliverTo: {
+      city: "Springfield",
+      state: "Ohio",
+      address: "5454 Example Dr.",
+      zip: "99991"
+    }
+  },
+  {
+    id: 2,
+    items: [],
+    deliverTo: {
+      city: "Springfield",
+      state: "Ohio",
+      address: "5454 Example Dr.",
+      zip: "99991"
+    }
+  },
+  {
+    id: 3,
+    items: [],
+    deliverTo: {
+      city: "Springfield",
+      state: "Ohio",
+      address: "5454 Example Dr.",
+      zip: "99991"
+    }
+  }
 ];
 
 vi.mock("../src/db.js", () => ({
@@ -232,7 +259,10 @@ vi.mock("../src/db.js", () => ({
 
   getOrders: vi.fn(async () => sampleOrders),
 
-  getOrderById: vi.fn(async () => sampleOrders.find()),
+  getOrderById: vi.fn(async (orderId) => sampleOrders.find(
+    (order) => order.id === orderId)),
+
+  getOrdersByUserId: vi.fn(async () => sampleOrders),
 
   createOrder: vi.fn(async () => {}),
 

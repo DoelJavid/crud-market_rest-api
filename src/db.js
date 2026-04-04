@@ -483,11 +483,54 @@ export async function getOrders(queryData) {
   const { q = "", limit = 50, page = 0 } = queryData;
   const orderList = await db.select({
       id: orders.id,
+      userId: orders.userId,
       deliveryAddress: orders.deliveryAddress,
       deliveryCity: orders.deliveryCity,
       deliveryState: orders.deliveryState
     })
   .from(orders)
+  .limit(Number(limit))
+  .offset(Number(limit) * Number(page));
+
+  const selectedOrderIds = orderList.map((order) => order.id);
+  const listedItems = await db.select({
+      orderId: ordersItems.orderId,
+      productId: ordersItems.productId,
+      productName: products.name,
+      quantity: ordersItems.productCount
+    })
+  .from(ordersItems)
+  .innerJoin(products, eq(ordersItems.productId, products.id))
+  .where(inArray(ordersItems.productId, selectedOrderIds));
+
+  return orderList.map((order) => ({
+    ...order,
+    items: listedItems.filter((item) => item.orderId === order.id)
+    .map((item) => ({
+      productId: item.productId,
+      productName: item.productName,
+      quantity: item.quantity
+    }))
+  }));
+}
+
+/**
+  Retrieves a list of orders accociated with the given userId.
+
+  @param {number} orderId
+  @return {Order}
+*/
+export async function getOrdersByUserId(userId, queryData) {
+  const { q = "", limit = 50, page = 0 } = queryData;
+  const orderList = await db.select({
+      id: orders.id,
+      userId: orders.userId,
+      deliveryAddress: orders.deliveryAddress,
+      deliveryCity: orders.deliveryCity,
+      deliveryState: orders.deliveryState
+    })
+  .from(orders)
+  .where(eq(orders.userId, userId))
   .limit(Number(limit))
   .offset(Number(limit) * Number(page));
 
@@ -522,6 +565,7 @@ export async function getOrders(queryData) {
 export async function getOrderById(orderId) {
   const order = await db.select({
       id: orders.id,
+      userId: orders.userId,
       deliveryAddress: orders.deliveryAddress,
       deliveryCity: orders.deliveryCity,
       deliveryState: orders.deliveryState
