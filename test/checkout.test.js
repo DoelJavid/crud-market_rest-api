@@ -3,6 +3,17 @@ import request from "supertest";
 import app from "../src/app.js";
 import { login } from "./testutils.js";
 
+/**
+  A basic utility function that returns a valid credit card expiry date every
+  single time.
+
+  @return {string}
+*/
+function getCardExpiryDate() {
+  return new Date(`12/1/${new Date().getFullYear() + 4}`)
+  .toLocaleDateString("en-US", { month: "2-digit", year: "2-digit" });
+}
+
 describe("POST /checkout", () => {
   it("Returns 201 for a successful checkout", async () => {
     const agent = await login();
@@ -13,6 +24,7 @@ describe("POST /checkout", () => {
     .send({
       cardNumber: "4242 4242 4242 4242",
       cvv: "999",
+      expiryDate: getCardExpiryDate(),
       cardSignature: "JANE DOE",
       billingAddress: {
         city: "Springfield",
@@ -40,6 +52,7 @@ describe("POST /checkout", () => {
     .send({
       cardNumber: "4242 4242 4242 4242",
       cvv: "999",
+      expiryDate: getCardExpiryDate(),
       cardSignature: "JANE DOE",
       billingAddress: {
         city: "Springfield",
@@ -58,6 +71,7 @@ describe("POST /checkout", () => {
     const res = await agent.post("/checkout")
     .send({
       cardNumber: "4242 4242 4242 4242",
+      expiryDate: getCardExpiryDate(),
       billingAddress: {
         city: "Springfield",
         state: "Ohio",
@@ -75,6 +89,9 @@ describe("POST /checkout", () => {
     const res = await agent.post("/checkout")
     .send({
       cardNumber: "4242 4242 4242 4242",
+      cvv: "999",
+      expiryDate: getCardExpiryDate(),
+      cardSignature: "JANE DOE",
       billingAddress: {
         city: "Springfield",
         state: "Ohio",
@@ -85,13 +102,14 @@ describe("POST /checkout", () => {
     expect(res.status).toStrictEqual(400);
   });
 
-  it("Returns 400 for invalid payment information", async () => {
+  it("Returns 400 for invalid card number", async () => {
     const agent = await login();
 
     const res = await agent.post("/checkout")
     .send({
       cardNumber: "4242 4242 4242 1242",
       cvv: "999",
+      expiryDate: getCardExpiryDate(),
       cardSignature: "JANE DOE",
       billingAddress: {
         city: "Springfield",
@@ -110,6 +128,7 @@ describe("POST /checkout", () => {
     .send({
       cardNumber: "4242 4242 4242 4242",
       cvv: "999",
+      expiryDate: getCardExpiryDate(),
       cardSignature: "JANE DOE",
       billingAddress: {
         city: "Springfield",
